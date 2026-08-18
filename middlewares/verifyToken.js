@@ -21,6 +21,35 @@ const jwt = require('jsonwebtoken');
  */
 const verifyToken = function (req, res, next) {
   /* 作答區 */
+  // 從Headers 中取出 authorziation
+  const authHeader = req.headers.authorization;
+
+  // 驗證格式:檢查是否存在，且開頭是否為'Bearer'
+  if(!authHeader || !authHeader.startsWith('Bearer ')){
+    return res.status(401).json({
+      status: 'false',
+      message: '請先登入'
+    });
+  }
+
+  // 切割字串，取出真正的token
+  const token = authHeader.split(' ')[1];
+
+  // 以try/catch 進行 JWT 驗證
+  try {
+    // 驗證token 是否合法，並使用環境變數(env)中的金鑰
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // 驗證成功: 把解密後的使用者資料掛載到 req.user ，交棒給下一個路由管理員
+    req.user = decoded;
+    next();
+  } catch(error){
+    // 驗證失敗: 回傳401
+    return res.status(401).json({
+      status: 'false',
+      message: 'Token 無效或已過期'
+    });
+  }
 };
 
 module.exports = verifyToken;
